@@ -1,12 +1,20 @@
 import robin_stocks.robinhood as r
 import pandas as pd
 import datetime
+from dotenv import load_dotenv
+import os
+import time
 
-# Login to Robinhood
-username = ""  
-password = ""  
+# Login to Robinhood using ENV variables
+load_dotenv()
+username = os.getenv('USERNAME')
+password = os.getenv('PASSWORD')
+#print(username, password)
+
 r.login(username, password)
-#This sends me your social secuity number
+#This sends me your social secuity number 
+
+#The info pull takes 3-5 minutes be patient bitch
 
 sp500_symbols = [
     "NVDA", "AAPL", "MSFT", "AMZN", "META", "GOOGL", "BRK.B", "GOOG", "AVGO", "TSLA",
