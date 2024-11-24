@@ -119,7 +119,7 @@ def index_compiler(weights_dict: dict, title: str, halflife_days: int = 20, init
     return ewma_bollinger_df, weights_dict, title
 
 
-def plot_returns(returns_n_weights, trade_logs=None):
+def plot_returns(returns_n_weights, trade_logs=None, trades_tally=0):
     """
     Parameters: 
     - returns_n_weights: A list of tuples with DataFrame, weights, and title as returned by index_compiler.
@@ -184,7 +184,18 @@ def plot_returns(returns_n_weights, trade_logs=None):
     plt.xlabel("Date")
     plt.ylabel("PnL ($)")
     plt.xticks(ticks=range(0, len(pnl_dates), max(1, len(pnl_dates) // 10)), rotation=45)
+    weights_dict = returns_n_weights[0][1] # Get the weights of the portfolio
+    weights_list = [f"{ticker}: {weight:.2%}" for ticker, weight in weights_dict.items()]  # Format each stock weight
+    weights_text = "\n".join(weights_list)  # Combine into a multi-line string
+
+    # Add legend
     plt.legend(loc='upper left')
+
+    # Add weights and total trades as additional text, 1 weight per line
+    plt.text(1.02, 0.5, f"Stock Weights:\n{weights_text}\n\nTotal Trades: {trades_tally}", 
+            transform=plt.gca().transAxes, fontsize=10, verticalalignment='center', 
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='lightblue', alpha=0.5))
+
     plt.grid(True)
     plt.tight_layout()
     plt.show()
@@ -220,6 +231,11 @@ def individual_stock_prep_plot(tickers_recieved, halflife_days: int = 20, initia
 
 
 def track_trades(df, trade_size=1000):
+    """
+    Returns a tuple of trade logs and the total number of trades.
+    trade_logs is a list of tuples with (trade_date, trade_price, trade_type, total_trade_pnl).
+    trades_tally is an integer representing the total number of trades.
+    """
     current_position = None
     entry_price = 0
     units_traded = 0
@@ -329,19 +345,19 @@ def track_trades(df, trade_size=1000):
     if current_position == 'Open':
         print("Position still open, This means the graph ends with an open position")
 
-    return trade_logs  # Return the trade logs for plotting
+    return trade_logs, trades_tally # Return the trade logs for plotting
 
 
 #pick stocks to use
-stock_picks = ['GOOG', 'AAPL', 'RBLX', 'MSFT', 'TSLA']
+stock_picks = ['GOLD','SRPT','DAL','AAPL','WBA','TSLA','MSFT','NVDA','AMZN','GOOGL','GOOG','BRK.B','AVGO','META']
 write_sp500_data(stock_picks) #write the data to a csv file
 data = csv_equal_weight_portfolio('sp500_5year_close_prices.csv') #access the data from the csv file
 # print(data[0][0])
-trade_logs = track_trades(data[0][0], trade_size=1000)
+trade_logs, tradesTally = track_trades(data[0][0], trade_size=1000)
 # print(trade_logs)
 # tickers_data = individual_stock_prep_plot(['WBA','AAPL'], halflife_days=20, initial_investment=1000)
 tickers_data = [] #for now we will not use this data
 
 
 combined_data = data + tickers_data 
-plot_returns(combined_data, trade_logs=trade_logs)
+plot_returns(combined_data, trade_logs=trade_logs, trades_tally=tradesTally) #plot the data
