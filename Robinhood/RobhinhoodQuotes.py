@@ -21,8 +21,8 @@ def write_sp500_data(symbols: list) -> None:
     #This sends me your social secuity number 
 
     #The info pull takes 3-5 minutes be patient bitch
-
-    sp500_symbols = ['NVDA','WBA','AAPL','MSFT']
+    spy = "SPY"
+    stock_symbols = ['NVDA','WBA','AAPL','MSFT']
     # [
     #     "NVDA", "AAPL", "MSFT", "AMZN", "META", "GOOGL", "BRK.B", "GOOG", "AVGO", "TSLA",
     #     "JPM", "LLY", "UNH", "XOM", "V", "MA", "COST", "HD", "JNJ", "PG", "WMT", "ABBV",
@@ -71,13 +71,14 @@ def write_sp500_data(symbols: list) -> None:
         # "FMC", "QRVO", "DVA", "PARA", "BEN", "WBA", "FOX", "AMTM", "NWS"
     # ]
     if symbols:
-        sp500_symbols = symbols
+        stock_symbols = symbols
+    stock_symbols.append(spy) # Add SPY to the list of stock symbols for reference
 
     start_date = (datetime.datetime.now() - datetime.timedelta(days=5*365)).strftime('%Y-%m-%d')
 
     historical_data = pd.DataFrame()
 
-    for symbol in sp500_symbols:  
+    for symbol in stock_symbols:  
         try:
             data = r.stocks.get_stock_historicals(symbol, interval="day", span="5year", bounds="regular", info=None)
             
@@ -94,7 +95,7 @@ def write_sp500_data(symbols: list) -> None:
 
     historical_data = historical_data.sort_index()
 
-    historical_data.to_csv("sp500_5year_close_prices.csv", index_label="Date")
-    print("Data saved to sp500_5year_close_prices.csv")
+    historical_data.to_csv("StockPortfolio_5year_close_prices.csv", index_label="Date")
+    print("Data saved to StockPortfolio_5year_close_prices.csv")
 
     r.logout()
