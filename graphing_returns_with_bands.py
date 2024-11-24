@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import time
+from Robinhood.RobhinhoodQuotes import write_sp500_data
+#seaborn is a library for making statistical graphics in Python. It is built on top of matplotlib and closely integrated with pandas data structures.
 
 tickers = None
 
@@ -115,14 +118,20 @@ def index_compiler(weights_dict: dict, title: str, halflife_days: int = 20, init
     ewma_bollinger_df = add_ewma_bollinger_bands(portfolio_values, halflife_days)
     return ewma_bollinger_df, weights_dict, title
 
-def plot_returns(returns_n_weights):
+
+def plot_returns(returns_n_weights, trade_logs=None):
     """
-    Parameters: returns_n_weights is a list of tuples. Each tuple contains the DataFrame with EWMA and Bollinger Bands, weights of a portfolio, and a portfolio title, as returned by the index_compiler function.
-    Plots portfolio values, EWMA, and Bollinger Bands based on initial investment.
+    Parameters: 
+    - returns_n_weights: A list of tuples with DataFrame, weights, and title as returned by index_compiler.
+    - trade_logs: List of tuples with (trade_date, trade_price, trade_type, total_trade_pnl).
+    
+    Plots portfolio values, EWMA, Bollinger Bands, and cumulative PnL from trade_logs, with trade markers on the PnL tracker.
     """
     plt.figure(figsize=(12, 7))
 
     labeled_bands = False
+    cumulative_pnl = []  # To store cumulative PnL over time
+    pnl_dates = []
 
     for ewma_bollinger_df, weights, title in returns_n_weights:
         if not labeled_bands:
@@ -140,16 +149,46 @@ def plot_returns(returns_n_weights):
         plt.plot(ewma_bollinger_df.index, ewma_bollinger_df['portfolio_value'], label=f"{title} Portfolio Value")
         plt.plot(ewma_bollinger_df.index, ewma_bollinger_df['ewma'], label=f"{title} EWMA", linestyle='--')
 
+    # Add trade points and PnL line if available
+    if trade_logs:
+        # Extract cumulative PnL directly from trade logs
+        for trade_date, trade_price, trade_type, total_trade_pnl in trade_logs:
+            pnl_dates.append(trade_date)
+            cumulative_pnl.append(total_trade_pnl)
+
+        # Plot the PnL line
+        plt.plot(pnl_dates, cumulative_pnl, label="Cumulative PnL", color='grey', linewidth=2)
+
+        # Plot trade markers on the PnL tracker
+        used_labels = set()  # Track used labels for legend only
+        for trade_date, trade_price, trade_type, total_trade_pnl in trade_logs:
+            if trade_type == 'long_entry':
+                plt.scatter(trade_date, total_trade_pnl, color='blue', marker='^', s=50, 
+                            label='Open Long' if 'Open Long' not in used_labels else "", alpha=0.8, zorder=5)
+                used_labels.add('Open Long')
+            elif trade_type == 'long_exit':
+                plt.scatter(trade_date, total_trade_pnl, color='orange', marker='v', s=50, 
+                            label='Close Long' if 'Close Long' not in used_labels else "", alpha=0.8, zorder=5)
+                used_labels.add('Close Long')
+            elif trade_type == 'short_entry':
+                plt.scatter(trade_date, total_trade_pnl, color='green', marker='^', s=50, 
+                            label='Open Short' if 'Open Short' not in used_labels else "", alpha=0.8, zorder=5)
+                used_labels.add('Open Short')
+            elif trade_type == 'short_exit':
+                plt.scatter(trade_date, total_trade_pnl, color='red', marker='v', s=50, 
+                            label='Close Short' if 'Close Short' not in used_labels else "", alpha=0.8, zorder=5)
+                used_labels.add('Close Short')
             
 
-    plt.title("Portfolio Value with EWMA and Bollinger Bands")
+    plt.title("Cumulative PnL with Trades")
     plt.xlabel("Date")
-    plt.ylabel("Portfolio Value ($)")
-    plt.xticks(ticks=range(0, len(ewma_bollinger_df.index), 60), labels=ewma_bollinger_df.index[::60], rotation=45)
-    plt.legend()
+    plt.ylabel("PnL ($)")
+    plt.xticks(ticks=range(0, len(pnl_dates), max(1, len(pnl_dates) // 10)), rotation=45)
+    plt.legend(loc='upper left')
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
 
 def csv_equal_weight_portfolio(file_path: str, halflife_days: int = 20, initial_investment=1000) -> None:
     """
@@ -163,6 +202,7 @@ def csv_equal_weight_portfolio(file_path: str, halflife_days: int = 20, initial_
     equal_portfolio_no_rebalancing = index_compiler(equal_weights, 'Equally Weighted Portfolio (No Rebalancing)', halflife_days, initial_investment, rebalance=False,)
     equal_portfolio_rebalanced_weekly = index_compiler(equal_weights, 'Equally Weighted Portfolio (Rebalanced Weekly)', halflife_days, initial_investment, rebalance=True, rebalance_frequency=5)
     return [equal_portfolio_rebalanced_weekly]
+
     # plot_returns([equal_portfolio_rebalanced])
 
 def individual_stock_prep_plot(tickers_recieved, halflife_days: int = 20, initial_investment=1000) -> None:
@@ -179,7 +219,129 @@ def individual_stock_prep_plot(tickers_recieved, halflife_days: int = 20, initia
     return ticker_data
 
 
-data = csv_equal_weight_portfolio('sp500_5year_close_prices.csv')
-tickers_data = individual_stock_prep_plot(['WBA','AAPL'], halflife_days=20, initial_investment=1000)
+def track_trades(df, trade_size=1000):
+    current_position = None
+    entry_price = 0
+    units_traded = 0
+    trades_tally = 0
+
+    # Ensure these columns exist in your DataFrame
+    df['trade_pnl'] = 0.0
+    df['total_trade_pnl'] = 0.0
+    df['position'] = None
+
+
+    # Lists for tracking trades
+    short_position_open = []
+    short_position_close = []
+    long_position_open = []
+    long_position_close = []
+    trade_logs = []  # Log of all trades for plotting
+
+    for i in range(len(df)):
+        price = df.loc[df.index[i], 'portfolio_value']
+        ewma = df.loc[df.index[i], 'ewma']
+        upper = df.loc[df.index[i], 'bollinger_upper']
+        lower = df.loc[df.index[i], 'bollinger_lower']
+
+        if i > 0:
+            # Start with the realized PnL carried forward
+            df.loc[df.index[i], 'total_trade_pnl'] = df.loc[df.index[i - 1], 'total_trade_pnl']
+
+        else:
+            # Initialize for the first row
+            df.loc[df.index[i], 'total_trade_pnl'] = 0
+        
+        # Calculate unrealized PnL (temporary, not added to total_trade_pnl)
+        unrealized_pnl = 0
+        if current_position == 'short':
+            unrealized_pnl = units_traded * (entry_price - price)  # Profit from price decrease
+        elif current_position == 'long':
+            unrealized_pnl = units_traded * (price - entry_price)  # Profit from price increase
+
+        # Append to trade_logs
+        trade_logs.append((df.index[i], price, 'neither', df.loc[df.index[i], 'total_trade_pnl'] + unrealized_pnl))
+
+        # Enter a short position
+        if current_position is None and price > upper:
+            print(f"Short position entered at {price}")
+            short_position_open.append(price)
+            trade_logs[i] = (trade_logs[i][0], trade_logs[i][1], 'short_entry', trade_logs[i][3])  # Overwrite trade type
+            current_position = 'short'
+            entry_price = price
+            units_traded = trade_size / entry_price  # Calculate units for fixed trade size
+            df.loc[df.index[i], 'position'] = 'short'
+
+        # Enter a long position
+        elif current_position is None and price < lower:
+            print(f"Long position entered at {price}")
+            long_position_open.append(price)
+            trade_logs[i] = (trade_logs[i][0], trade_logs[i][1], 'long_entry', trade_logs[i][3])  #overwriting the trade type
+            current_position = 'long'
+            entry_price = price
+            units_traded = trade_size / entry_price  # Calculate units for fixed trade size
+            df.loc[df.index[i], 'position'] = 'long'
+
+        # Exit short position
+        elif current_position == 'short' and price < ewma:
+            print(f"Short position exited at {price}")
+            short_position_close.append(price)
+            trade_logs[i] = (trade_logs[i][0], trade_logs[i][1], 'short_exit', trade_logs[i][3])  #overwriting the trade type
+            pnl = units_traded * (entry_price - price)  # Use units_traded for PnL
+            df.loc[df.index[i], 'total_trade_pnl'] += pnl
+            current_position = None
+            entry_price = 0
+            units_traded = 0
+            trades_tally += 1
+
+        # Exit long position
+        elif current_position == 'long' and price > ewma:
+            print(f"Long position exited at {price}")
+            long_position_close.append(price)
+            trade_logs[i] = (trade_logs[i][0], trade_logs[i][1], 'long_exit', trade_logs[i][3]) #overwriting the trade type
+            pnl = units_traded * (price - entry_price)  # Use units_traded for PnL
+            df.loc[df.index[i], 'total_trade_pnl'] += pnl
+            current_position = None
+            entry_price = 0
+            units_traded = 0
+            trades_tally += 1
+
+    print(df[['portfolio_value', 'position', 'total_trade_pnl']])
+
+    # Debug output
+    print("Short Position Open:", short_position_open)
+    print("Short Position Close:", short_position_close)
+    print("Long Position Open:", long_position_open)
+    print("Long Position Close:", long_position_close)
+
+    # Calculate overall PnL
+    # short_pnl = (np.array(short_position_open) - np.array(short_position_close)) * trade_size / np.array(short_position_open)
+    # long_pnl = (np.array(long_position_close) - np.array(long_position_open)) * trade_size / np.array(long_position_open)
+
+    # total_short_pnl = np.sum(short_pnl)
+    # total_long_pnl = np.sum(long_pnl)
+    # combined_pnl = total_short_pnl + total_long_pnl
+
+    # print("Total Short PnL:", total_short_pnl)
+    # print("Total Long PnL:", total_long_pnl)
+    # print("Total Combined PnL:", combined_pnl)
+    print("Total Trades:", trades_tally)
+    if current_position == 'Open':
+        print("Position still open, This means the graph ends with an open position")
+
+    return trade_logs  # Return the trade logs for plotting
+
+
+#pick stocks to use
+stock_picks = ['GOOG', 'AAPL', 'RBLX', 'MSFT', 'TSLA']
+write_sp500_data(stock_picks) #write the data to a csv file
+data = csv_equal_weight_portfolio('sp500_5year_close_prices.csv') #access the data from the csv file
+# print(data[0][0])
+trade_logs = track_trades(data[0][0], trade_size=1000)
+# print(trade_logs)
+# tickers_data = individual_stock_prep_plot(['WBA','AAPL'], halflife_days=20, initial_investment=1000)
+tickers_data = [] #for now we will not use this data
+
+
 combined_data = data + tickers_data 
-plot_returns(combined_data)
+plot_returns(combined_data, trade_logs=trade_logs)
