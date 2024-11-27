@@ -4,7 +4,6 @@ import cvxpy as cp
 
 # Load your data
 df = pd.read_csv("sp500_5year_close_prices.csv")
-#df = df[['Date', 'NVDA', 'AAPL', 'MSFT', 'AMZN', 'META', 'GOOGL']]
 df["Date"] = pd.to_datetime(df["Date"])
 df = df.set_index("Date")
 
@@ -37,8 +36,8 @@ n = A_0.shape[0]  # Number of assets
 Y = cp.Variable((n, n), PSD=True)
 
 # Define the regularization parameter
-rho = 0.1  # Adjust based on desired sparsity
-nu = 0.1  # Minimum variance threshold
+rho = 0.01  # Adjust based on desired sparsity
+nu = 0.001  # Minimum variance threshold
 
 # Objective function
 objective = cp.Minimize(cp.trace(M @ Y) + rho * cp.sum(cp.abs(Y)))
@@ -47,13 +46,9 @@ objective = cp.Minimize(cp.trace(M @ Y) + rho * cp.sum(cp.abs(Y)))
 constraints = [
     cp.trace(A_0 @ Y) >= nu,   # Variance constraint
     cp.trace(Y) == 1,           # Normalization constraint
-    Y >= 0 #is implied by PSD=True
+    Y >= 0 
 ]
 
-#max_weight = 0.1  # Maximum allowable weight per asset
-#for i in range(n):
-#    constraints.append(Y[i, i] <= max_weight**2)
-    
 # Define the problem
 prob = cp.Problem(objective, constraints)
 
@@ -67,43 +62,21 @@ if prob.status not in ["infeasible", "unbounded"]:
 else:
     print(f"Problem status: {prob.status}")
 
-import scipy.linalg
 
-# Ensure Y is symmetric
-Y_value = Y.value
-Y_symmetric = (Y_value + Y_value.T) / 2
+eigenvalues, eigenvectors = np.linalg.eigh(Y.value)
 
-# Eigenvalue decomposition
-eigvals, eigvecs = scipy.linalg.eigh(Y_symmetric)
-
-# Find the largest eigenvalue
-idx = np.argmax(eigvals)
-
-y_optimal = eigvecs[:, idx]
-y_optimal = y_optimal * np.sign(np.sum(y_optimal))
+max_index = np.argmax(eigenvalues)
 
 
-# Normalize y_optimal
-y_optimal = y_optimal / np.sum(y_optimal)
-
-# Display the weights
-for asset, weight in zip(returns.columns, y_optimal):
-    print(f"{asset}: {weight:.4f}")
-
-# Check sparsity
-non_zero_weights = np.sum(np.abs(y_optimal) > 1e-5)
-print(f"Number of non-zero weights: {non_zero_weights}")
+highest_eigenvalue = eigenvalues[max_index]
 
 
+corresponding_eigenvector = eigenvectors[:, max_index]
 
+print("Highest Eigenvalue:")
+print(highest_eigenvalue)
 
-
-
-
-
-
-
-
-
+print("Corresponding Eigenvector:")
+print(corresponding_eigenvector)
 
 
