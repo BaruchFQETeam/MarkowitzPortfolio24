@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import time
 from Robinhood.RobhinhoodQuotes import write_sp500_data
+from Robinhood.sdp import get_optimal_weights
+
 #seaborn is a library for making statistical graphics in Python. It is built on top of matplotlib and closely integrated with pandas data structures.
 
 tickers = None
@@ -215,7 +217,9 @@ def plot_returns(returns_n_weights, trade_logs=None, trades_tally=0):
     plt.show()
 
 
-def csv_equal_weight_portfolio(file_path: str, halflife_days: int = 20, initial_investment=1000) -> None:
+
+
+def csv_weighted_portfolio(file_path: str, weights ,halflife_days: int = 20, initial_investment=1000) -> None:
     """
     Creates an equally weighted portfolio based on the CSV and plots its value with EWMA and Bollinger Bands.
     """
@@ -223,8 +227,9 @@ def csv_equal_weight_portfolio(file_path: str, halflife_days: int = 20, initial_
     load_data(file_path)
     tickers_adjusted = tickers.tolist()  # Convert Index to a list
     tickers_adjusted.remove('SPY')      # Remove 'SPY' from the list
-    equal_weights = {ticker: 1/len(tickers_adjusted) for ticker in tickers_adjusted}
-    print(f"Equal weights: {equal_weights}")
+    #equal_weights = {ticker: 1/len(tickers_adjusted) for ticker in tickers_adjusted}
+    equal_weights = weights # this mf is a diciotnary
+    print(f"Weights: {equal_weights}")
     equal_portfolio_rebalanced = index_compiler(equal_weights, 'Equally Weighted Portfolio (Rebalanced Daily)', halflife_days, initial_investment, rebalance=True, rebalance_frequency=1)
     equal_portfolio_no_rebalancing = index_compiler(equal_weights, 'Equally Weighted Portfolio (No Rebalancing)', halflife_days, initial_investment, rebalance=False,)
     equal_portfolio_rebalanced_weekly = index_compiler(equal_weights, 'Equally Weighted Portfolio (Rebalanced Weekly)', halflife_days, initial_investment, rebalance=True, rebalance_frequency=5)
@@ -350,14 +355,17 @@ def track_trades(df, initial_investment=1000):
     return trade_logs, trades_tally
 
 #pick stocks to use 
-stock_picks = ['NIO','PLTR', 'BABA']
+
+stock_picks = ['JD','BABA', 'AAPL']
 write_sp500_data(stock_picks) #write the data to a csv file
-data = csv_equal_weight_portfolio('StockPortfolio_5year_close_prices.csv') #access the data from the csv file
-# print(data[0][0])
+balls = get_optimal_weights() 
+data = csv_weighted_portfolio('StockPortfolio_5year_close_prices.csv', balls) #access the data from the csv file
+# print(data[0][0]) 
+
 trade_logs, tradesTally = track_trades(data[0][0], initial_investment=1000)
 # print(trade_logs)
 # tickers_data = individual_stock_prep_plot(['WBA','AAPL'], halflife_days=20, initial_investment=1000)
 tickers_data = [] #for now we will not use this data
 spy_data = individual_stock_prep_plot(['SPY'],halflife_days=20, initial_investment=1000) #add SPY to the list of stock symbols for comparison as it is the S&P 500 ETF
 combined_data = data + tickers_data + spy_data #combine the data
-plot_returns(combined_data, trade_logs=trade_logs, trades_tally=tradesTally) #plot the data
+plot_returns(combined_data, trade_logs=trade_logs, trades_tally=tradesTally) 
