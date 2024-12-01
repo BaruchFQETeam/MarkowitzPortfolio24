@@ -356,9 +356,10 @@ def track_trades(df, initial_investment=1000):
 
 #pick stocks to use 
 
-stock_picks = ['JD','BABA', 'AAPL']
-write_sp500_data(stock_picks) #write the data to a csv file
+stock_picks = stock_picks = ['JPM', 'AAPL', 'GM', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NFLX', 'FB', 'SPY']
+write_sp500_data(stock_picks, 'month', 3) #write the data to a csv file
 balls = get_optimal_weights() 
+dict(sorted(balls.items(), key=lambda item: item[1]))
 data = csv_weighted_portfolio('StockPortfolio_5year_close_prices.csv', balls) #access the data from the csv file
 # print(data[0][0]) 
 

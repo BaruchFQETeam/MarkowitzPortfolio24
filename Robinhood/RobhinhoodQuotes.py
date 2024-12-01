@@ -5,9 +5,13 @@ from dotenv import load_dotenv
 import os
 import time
 
-def write_sp500_data(symbols: list) -> None:
+def write_sp500_data(symbols: list, metric: str, len: int = 1) -> None:
     ''' 
-    Parameters: symbols is a list of stock symbols.
+    Parameters: 
+    symbols is a list of stock symbols.
+    metric is the metric to fetch for the given list of stock symbols. "day" for daily data, "week" for weekly data, "month" for monthly data, "year" for yearly data.
+    len is the number of that metric of data to fetch.
+
     The function fetches the 5 year historical data for the given list of stock symbols,
     and saves it to a csv file named sp500_5year_close_prices.csv.
     '''
@@ -77,10 +81,25 @@ def write_sp500_data(symbols: list) -> None:
     start_date = (datetime.datetime.now() - datetime.timedelta(days=5*365)).strftime('%Y-%m-%d')
 
     historical_data = pd.DataFrame()
+    spans = ""
+    if metric == "day":
+        spans = "day"
+    elif metric == "week":
+        spans = "week"
+    elif metric == "month":
+        if len == 3:
+            spans = "3month"
+        else:
+            spans = "month"
+    elif metric == "year":
+        if len == 5:
+            spans = "5year"
+        else:
+            spans = "year"
 
     for symbol in stock_symbols:  
         try:
-            data = r.stocks.get_stock_historicals(symbol, interval="day", span="5year", bounds="regular", info=None)
+            data = r.stocks.get_stock_historicals(symbol, interval="day", span=spans, bounds="regular", info=None)
             
             stock_data = {
                 pd.to_datetime(record['begins_at']): float(record['close_price'])
