@@ -52,8 +52,8 @@ def get_optimal_weights():
 
     # Constraints
     constraints = [
-        cp.trace(A_0 @ Y) >= nu,   # Variance constraint
-        cp.trace(Y) == 1,           # Normalization constraint
+        # cp.trace(A_0 @ Y) >= nu,   # Variance constraint
+        # cp.trace(Y) == 1,           # Normalization constraint
         Y >> 0 
     ]
 
