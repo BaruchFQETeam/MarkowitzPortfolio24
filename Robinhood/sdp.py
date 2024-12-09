@@ -20,6 +20,13 @@ def get_optimal_weights():
 
     # Center the data
     x_bar = np.mean(x_t, axis=0)
+    print(np.isnan(x_t).any(), np.isinf(x_t).any())  # Check x_t
+    print(np.isnan(x_bar).any(), np.isinf(x_bar).any())  # Check x_bar
+    print("Indices of inf in x_t:", np.where(np.isinf(x_t)))
+    print("Indices of inf in x_bar:", np.where(np.isinf(x_bar)))
+    print(x_t[356])
+    print(x_bar[356])
+
     x_tilde = x_t - x_bar
 
     # Compute autocovariance matrices

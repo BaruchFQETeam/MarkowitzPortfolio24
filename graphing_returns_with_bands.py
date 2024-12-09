@@ -356,8 +356,48 @@ def track_trades(df, initial_investment=1000):
 
 #pick stocks to use 
 
-stock_picks = stock_picks = ['AAPL', 'JD', 'AMZN', 'BABA']
-write_sp500_data(stock_picks, 'year', 5) #write the data to a csv file
+stock_picks = [ 'SRPT']
+# some russell 2000 stocks
+stock_picks = [
+    "FTAI", "SFM", "INSM", "PCVX", "AIT", "FLR", "CRDO", "CRS", "FN", "MLI", "RKLB", "SSB", "HQY", "GTLS", "UFPI",
+    "ENSG", "RVMD", "CVLT", "ANF", "IONQ", "AUR", "ONB", "MOD", "EXLS", "MARA", "SPXC", "SPSC", "CMC", "TMHC", "BECN",
+    "LUMN", "RHP", "HLNE", "GKOS", "CSWI", "CWST", "GBCI", "QTWO", "BMI", "HRI", "HIMS", "MTH", "RMBS", "COOP", "SUM"
+    , "SIGI", "LNTH", "KNF", "ALTR", "BPMC", "UPST", "HALO", "ESNT", "ACIW", "HOMB", "MMSI", "STRL", "PIPR",
+    "NOVT", "KRG", "JXN", "WTS", "FSS", "BCC", "CYTK", "ZWS", "EAT", "UMBF", "QLYS", "EPRT", "CBT", "GATX", "BCPC",
+    "GPI", "ALTM", "TRNO", "MDGL", "SKY", "CHX", "VRNS", "DY", "CNX", "FFIN", "RDNT", "RDN", "BE", "UBSI",
+    "MAC", "ITRI", "KBH", "SLG", "CWAN", "SHAK", "ABG", "NXT", "ACA", "MATX", "WK", "CADE", "CRNX", "IBP", "ALKS",
+    "BIPC", "HWC", "VLY", "TENB", "IDCC", "KTB", "BDC", "CORT", "PRMB", "NJR", "PECO", "EXPO", "FELE", "IRT", "KAI",
+    "SFBS", "TGTX", "LRN", "POR", "ZETA", "ITGR", "SM", "AVNT", "CTRE", "SWX", "FTDR", "KRYS", "BOOT", "NSIT", "BOX",
+    "PRIM", "PLXS", "MUR", "ADMA", "SKYW", "FUN", "MGY", "MMS", "TXNM", "SOUN", "GVA", "ROAD", "AEIS", "BKH", "NE",
+    "GH", "ASB", "SBRA", "SMTC", "SITM", "AVAV", "ORA", "SANM", "ABCB", "ESGR", "BCO", "MHO", "AROC", "TCBI", "FCFS",
+    "GLNG", "CVCO", "WHD", "SG", "PBH", "RNA", "FUL", "KTOS", "CNO", "CALM", "ASGN", "OGS", "HAE", "NPO", "PRCT",
+    "BBIO", "SR", "IBOC", "AX", "NOG", "REZI", "PJT", "SIG", "VRRM", "GMS", "MWA", "CNK", "OPCH", "SKT", "MC", "JBT",
+    "STEP", "RXO", "KFY", "RUSHA", "TPH", "PI", "APLE", "VSCO", "CBZ", "ALE", "ENS", "SLAB", "ABM", "WDFC", "RIOT",
+    "BL", "ESE", "CDP", "CRC", "ACLX", "PTCT", "MGEE", "AXSM", "WD", "DORM", "EBC", "MIR", "TEX", "HASI", "PCH", "ASO",
+    "SMPL", "POWI", "ATMU", "GEO", "JOBY", "LANC", "AGIO", "UCB", "AI", "ATGE", "CEIX", "FRSH", "CCOI", "TDS",
+    "PTON", "VCYT", "CARG", "UEC", "ASTS", "BHVN", "BNL", "BXMT", "ICUI", "ATKR", "ACVA", "HP", "TGNA", "BLKB", "HCC",
+    "NWE", "ALRM", "NUVL", "SXT", "AEO", "AUB", "FORM", "SLVM", "NHI", "HL", "SHOO", "RYTM", "NMIH", "BWIN", "OTTR",
+    "HGV", "RELY", "URBN", "PBF", "GHC", "HUBG", "ALIT", "SYNA", "OSCR", "FULT", "TRN", "CRVL", "VERX", "DNLI", "CBU",
+    "GFF", "IIPR", "AWR", "TWST", "CVBF", "PATK", "PTEN", "WSFS", "FLG", "CORZ", "TNET", "HTLF", "AGYS", "SRRK", "PFSI",
+    "LCII", "NSP", "HBI", "MGRC", "AVA", "UNF", "NVCR", "SNEX", "OSIS", "RIG", "PRGS", "SATS", "VCTR", "GT", "CNS",
+    "GSHD", "OUT", "IOSP", "FIBK", "PAR", "CPK", "SWTX", "FOLD", "BTU", "UE", "PRK", "CATY", "ARWR", "CWT", "AZZ",
+    "NEOG", "LBRT", "PLMR", "HNI", "DIOD", "BRZE", "MYRG", "APAM", "BGC", "AKR", "OII", "VCEL", "TOWN", "ARCH", "PAYO",
+    "SFNC", "COMP", "DRS", "ENR", "AMBA", "FCPT", "LIVN", "NARI", "BUR", "FBP", "STNE", "RPD", "ENVA", "SDRL", "BANF",
+    "INDB", "LXP", "IRTC", "ZD", "FRME", "KLIC", "GNW", "VAL", "INTA", "DOCN", "CDE", "BKU", "POWL", "HWKN", "FLYW",
+    "ARCB", "EPAC", "MTX", "JJSF", "YELP", "VC", "BOH", "LAUR", "SHO", "WERN", "AIN", "IPAR", "TTMI", "HUT", "RRR",
+    "ICFI", "AMR", "TBBK", "PTGX", "CPRX", "LMND", "CXW", "NATL", "IBTX", "CAKE", "FFBC", "CCS", "AVPT", "ACLS", "DYN",
+    "WAFD", "CABO", "PHIN", "AHR", "SBCF", "EWTX", "YOU", "BANC", "CURB", "EFSC", "SXI", "HI", "AIR", "CRGY", "VSH",
+    "PPBI", "RUN", "TFIN", "IDYA", "VIAV", "MTRN", "IOVA", "PSMT", "TDW", "STNG", "WNS", "GERN", "GPOR", "EVTC", "KMT",
+    "MGNI", "NEO", "IGT", "STRA", "EXTR", "WSBC", "CNMD", "CON", "KNTK", "IESC", "ROIC", "LGIH", "ALKT", "KAR", "KWR",
+    "TMDX", "NMRK", "PLUS", "B", "HLMN", "PFS", "PRKS", "BANR", "GBX", "GOLF", "MCY", "HURN", "PRVA", "ROCK", "LGND",
+    "SEM", "IVT", "SYBT", "SKWD", "AKRO", "FBK", "UPWK", "KYMR", "GRBK", "MBC", "MRCY", "RAMP", "ADUS", "WRBY", "OMCL",
+    "AGM", "VYX", "UFPT", "RNST", "KROS", "JBLU", "ACAD", "DRH", "AVDX", "BATRK", "DBRG", "LMAT", "BEAM", "SMR", "OSW",
+    "NBTB", "PRG", "CALX", "ALG", "TRMK", "RXRX", "DEI", "HEES", "ROG", "PD", "VSEC", "TNDM", "ACHR", "WULF", "TARS",
+    "VERA", "LC", "VRNT", "TDOC", "NTB", "APGE", "LZB", "ABR", "APOG", "TRUP", "TGLS", "AGX", "SUPN", "FL", "OI",
+    "JANX", "CASH", "PDCO"
+]
+
+# write_sp500_data(stock_picks, 'year', 5) #write the data to a csv file
 balls = get_optimal_weights() 
 dict(sorted(balls.items(), key=lambda item: item[1]))
 data = csv_weighted_portfolio('StockPortfolio_5year_close_prices.csv', balls) #access the data from the csv file
